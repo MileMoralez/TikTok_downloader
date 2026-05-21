@@ -9,3 +9,9 @@ body {
   font-family: var(--font-kantumruy);
   background-color: #f8fafc;
 }
+@layer base {
+  body {
+    /* 💡 ឱ្យអក្សរទូទៅប្រើ Kantumruy Pro បើចំណងជើងទើបប្រើ Dangrek */
+    font-family: var(--font-kantumruy), sans-serif;
+  }
+}

@@ -1,65 +1,303 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
 
 export default function Home() {
+  const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [loopLoading, setLoopLoading] = useState(false); // 💡 State សម្រាប់ពេលដោនឡូតរូបភាពទាំងអស់
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState('');
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [history, setHistory] = useState<any[]>([]);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('silent_media_history');
+    if (savedHistory) setHistory(JSON.parse(savedHistory));
+  }, []);
+
+  const handleDownload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setResult(null);
+    setCurrentImgIndex(0);
+    setCopied(false);
+
+    try {
+      const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
+      const json = await res.json();
+
+      if (json && json.data) {
+        setResult(json.data);
+
+        const newItem = {
+          title: json.data.title || 'គ្មានចំណងជើង',
+          cover: json.data.cover,
+          url: url,
+          timestamp: Date.now()
+        };
+        const updatedHistory = [newItem, ...history.filter(h => h.url !== url)].slice(0, 3);
+        setHistory(updatedHistory);
+        localStorage.setItem('silent_media_history', JSON.stringify(updatedHistory));
+
+      } else {
+        setError('រកមិនឃើញទិន្នន័យទេ! សូមពិនិត្យមើល Link TikTok របស់មេឡើងវិញ។');
+      }
+    } catch (err) {
+      setError('មានបញ្ហាបច្ចេកទេសក្នុងការភ្ជាប់ទៅកាន់ Server!');
+    } finally {
+      loading && setLoading(false);
+    }
+  };
+
+  // 💡 អាវុធសម្ងាត់ថ្មីលំដាប់ Advanced៖ បង្ខំទាញយករូបទាំងអស់ចូល Gallery ព្រមគ្នាដោយប្រើ Blob Fetch ជៀសវាង Browser Block
+  const downloadAllImagesDirectly = async () => {
+    if (!result || !result.images) return;
+    setLoopLoading(true);
+
+    try {
+      for (let i = 0; i < result.images.length; i++) {
+        const imgUrl = result.images[i];
+        const downloadUrl = `/api/download?url=${encodeURIComponent(imgUrl)}&type=image&index=${i + 1}`;
+        
+        // 🛠️ ល្បិចកលកូដ៖ ទាញយកទិន្នន័យជា Blob សិន រួចសឹមបង្កើត Trigger ដោនឡូត បែបនេះទូរស័ព្ទណាដឹងតែធ្លាក់រូបដែរ
+        const response = await fetch(downloadUrl);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `silent_media_image_${i + 1}.jpg`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        // សម្អាត Memory ក្រោយពេលចុចរួច
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+
+        // ពន្យារពេល ១៥០ មិល្លីវិនាទី ដើម្បីឱ្យប្រព័ន្ធប្រតិបត្តិការទូរស័ព្ទចាប់ទិន្នន័យទាន់
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+    } catch (err) {
+      alert('មានបញ្ហាក្នុងការទាញយករូបភាពទាំងអស់! សូមសាកល្បងម្ដងទៀតមេ។');
+    } finally {
+      setLoopLoading(false);
+    }
+  };
+
+  // 💡 មុខងារបន្ថែម៖ ចុច Copy លីងវីដេអូ ឬរូបភាពដែលគ្មាន Watermark ទុកចែករំលែក
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100 antialiased font-sans relative overflow-hidden">
+      
+      {/* Background Glow Effects */}
+      <div className="absolute top-[-10%] left-[-20%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[10%] right-[-20%] w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-[120px] pointer-events-none" />
+
+      {/* Top Navbar */}
+      <nav className="bg-slate-900/60 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-800/80 px-4 py-4">
+        <div className="max-w-md mx-auto flex justify-between items-center">
+          <div className="text-xl font-black tracking-widest bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent [font-family:var(--font-dangrek)]">
+            🚀 SILENT MEDIA
+          </div>
+          <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+            Mobile v6.0
+          </span>
+        </div>
+      </nav>
+
+      {/* Main Container */}
+      <main className="flex-grow flex flex-col items-center px-4 py-8 max-w-md mx-auto w-full space-y-8 relative z-10">
+        
+        {/* Intro Section */}
+        <div className="text-center space-y-3 pt-4 w-full">
+          <h1 className="text-3xl md:text-4xl text-white leading-tight tracking-wide [font-family:var(--font-dangrek)]">
+            ទាញយកវីដេអូ & រូបភាព <br />
+            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">គ្មាន Watermark ឡើយ</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-slate-400 text-xs md:text-sm font-medium px-4">
+            ដោនឡូតល្បឿនលឿន ងាយស្រួលបំផុត រូបភាពរត់ចូល Gallery ទូរស័ព្ទភ្លាមៗ!
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        {/* Input Form */}
+        <form onSubmit={handleDownload} className="w-full space-y-3">
+          <div className="bg-slate-900/80 backdrop-blur-md p-2.5 rounded-2xl border border-slate-800/80 shadow-2xl flex flex-col gap-2 focus-within:border-indigo-500/50 transition-all">
+            <input 
+              type="url" 
+              placeholder="បិទ Link វីដេអូ ឬរូបភាព TikTok នៅទីនេះ..." 
+              required
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="w-full px-4 py-4 text-sm rounded-xl bg-slate-950 border border-slate-800/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition-all"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-90 active:scale-[0.99] disabled:from-slate-700 disabled:to-slate-700 text-white font-bold text-sm py-4 rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+            >
+              {loading ? 'កំពុងវិភាគទិន្នន័យ...' : 'ចាប់ផ្ដើមទាញយក'}
+            </button>
+          </div>
+        </form>
+
+        {/* Error Message */}
+        {error && (
+          <div className="w-full p-4 bg-red-950/50 rounded-xl border border-red-100/10 text-red-400 text-xs font-medium text-center backdrop-blur-md">
+            {error}
+          </div>
+        )}
+
+        {/* Result Showcase */}
+        {result && (
+          <div className="w-full bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-2xl p-5 border border-slate-800/80 space-y-5 transition-all">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <h2 className="text-sm font-bold text-slate-200">ប្រព័ន្ធរៀបចំរួចរាល់ហើយ!</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(result.images ? result.images[currentImgIndex] : result.play)}
+                className="text-[11px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-lg hover:bg-indigo-500/20 transition-all"
+              >
+                {copied ? '✅ បានចម្លង!' : '🔗 ចម្លង Link ស្អាត'}
+              </button>
+            </div>
+
+            {/* 📸 ប្រភេទរូបភាព Slideshow */}
+            {result.images && result.images.length > 0 ? (
+              <div className="space-y-4">
+                
+                {/* ប៊ូតុងទំនើប៖ ដោនឡូតគ្រប់រូបភាពព្រមគ្នា */}
+                <button 
+                  type="button"
+                  onClick={downloadAllImagesDirectly}
+                  disabled={loopLoading}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-white font-bold py-4 rounded-xl text-xs transition shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2"
+                >
+                  {loopLoading ? (
+                    <span className="flex items-center gap-2 animate-pulse">⚡ កំពុងទាញយករូបភាពទាំងអស់...</span>
+                  ) : (
+                    `📥 ទាញយករូបភាពទាំង ${result.images.length} សន្លឹកចូល Gallery ព្រមគ្នា`
+                  )}
+                </button>
+
+                <div className="relative bg-slate-950 border border-slate-800 p-2 rounded-xl flex items-center justify-center overflow-hidden">
+                  <button 
+                    type="button"
+                    onClick={() => setCurrentImgIndex((p) => (p === 0 ? result.images.length - 1 : p - 1))}
+                    className="absolute left-3 z-10 p-2.5 rounded-full bg-slate-900/90 border border-slate-800 text-white transition active:scale-90 select-none"
+                  >
+                    ❮
+                  </button>
+
+                  <div className="w-full rounded-lg overflow-hidden bg-slate-900 aspect-square flex flex-col justify-center items-center">
+                    <img src={result.images[currentImgIndex]} alt="Slide" className="w-full h-full object-contain" />
+                  </div>
+
+                  <button 
+                    type="button"
+                    onClick={() => setCurrentImgIndex((p) => (p === result.images.length - 1 ? 0 : p + 1))}
+                    className="absolute right-3 z-10 p-2.5 rounded-full bg-slate-900/90 border border-slate-800 text-white transition active:scale-90 select-none"
+                  >
+                    ❯
+                  </button>
+                </div>
+
+                <div className="text-center text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 py-1.5 px-4 rounded-full w-max mx-auto">
+                  {currentImgIndex + 1} / {result.images.length}
+                </div>
+
+                <a 
+                  href={`/api/download?url=${encodeURIComponent(result.images[currentImgIndex])}&type=image&index=${currentImgIndex + 1}`}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-center font-semibold py-3.5 rounded-xl border border-slate-700 transition text-xs flex items-center justify-center gap-2"
+                >
+                  📥 សេវតែរូបមួយសន្លឹកនេះ (Save Current Image)
+                </a>
+              </div>
+            ) : (
+              // 🎥 ប្រភេទវីដេអូ
+              <div className="space-y-4">
+                <div className="w-full rounded-xl overflow-hidden bg-slate-950 aspect-[9/16] max-h-[380px] border border-slate-800 flex justify-center items-center">
+                  <video src={result.play} controls poster={result.cover} className="w-full h-full object-contain" playsInline />
+                </div>
+                <a 
+                  href={`/api/download?url=${encodeURIComponent(result.play)}&type=video`}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-bold py-4 rounded-xl transition shadow-md text-xs flex items-center justify-center gap-2"
+                >
+                  📥 ចុចទីនេះដើម្បីទាញយកវីដេអូ
+                </a>
+              </div>
+            )}
+
+            {/* Title */}
+            <p className="text-slate-400 text-xs font-medium line-clamp-2 bg-slate-950 p-3 rounded-xl border border-slate-800 text-left">
+              {result.title || 'គ្មានចំណងជើង (No Title)'}
+            </p>
+
+            {/* Sound MP3 */}
+            {result.music_info && (
+              <a 
+                href={result.music_info.play} 
+                target="_blank" 
+                rel="noreferrer"
+                className="w-full bg-slate-800/50 hover:bg-slate-800 text-slate-400 text-center font-semibold py-3.5 rounded-xl border border-slate-800 transition text-xs flex items-center justify-center gap-2"
+              >
+                🎵 ទាញយកតែបទភ្លេង/សំឡេង MP3
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Recent History */}
+        {history.length > 0 && (
+          <div className="w-full space-y-3">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left pl-1">
+              ⌛ ឯកសារទើបដោនឡូតថ្មីៗ (Recent)
+            </h3>
+            <div className="grid grid-cols-1 gap-2">
+              {history.map((item, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => { setUrl(item.url); }}
+                  className="w-full bg-slate-900/60 backdrop-blur-md p-2.5 rounded-xl border border-slate-800/60 shadow-md flex items-center gap-3 hover:border-indigo-500 transition-all text-left"
+                >
+                  <img src={item.cover} className="w-10 h-10 object-cover rounded-lg bg-slate-950 shrink-0 border border-slate-800" alt="History" />
+                  <div className="truncate pr-2">
+                    <p className="text-xs font-semibold text-slate-200 truncate">{item.title}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">ចុចដើម្បីបញ្ចូល Link ដោនឡូតឡើងវិញ</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Ads Placeholder */}
+        <div className="w-full p-4 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 text-center space-y-2">
+          <div className="text-[10px] font-bold text-slate-600 tracking-wider uppercase">Sponsor Advertisement</div>
+          <div className="text-xs text-slate-600 font-medium">[ កន្លែងដាក់ផ្ទាំងពាណិជ្ជកម្ម Google AdSense រកលុយ ]</div>
         </div>
+
       </main>
+
+      {/* Footer */}
+      <footer className="py-6 text-center border-t border-slate-900 bg-slate-950/80 w-full relative z-10">
+        <p className="text-[11px] text-slate-500 font-medium tracking-wide">
+          &copy; {new Date().getFullYear()} <span className="font-bold text-slate-400">SILENT MEDIA</span>. រក្សាសិទ្ធិគ្រប់យ៉ាងដោយមហាសេដ្ឋីលាក់មុខ។
+        </p>
+      </footer>
+
     </div>
   );
 }

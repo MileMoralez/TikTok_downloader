@@ -1,4 +1,5 @@
 import { Dangrek, Kantumruy_Pro } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/react'; // 💡 ថែម Vercel Analytics នៅទីនេះ
 import './globals.css';
 
 const dangrek = Dangrek({
@@ -40,6 +41,7 @@ export default function RootLayout({
       </head>
       <body className={`${dangrek.variable} ${kantumruy.variable} font-sans`}>
         {children}
+        <Analytics /> {/* 💡 ញាត់ភ្នែកទិព្វចូលត្រង់នេះ */}
       </body>
     </html>
   );

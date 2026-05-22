@@ -1,4 +1,5 @@
 import { Dangrek, Kantumruy_Pro } from 'next/font/google';
+import Script from 'next/script'; // 💡 ទី១៖ ថែមជួរនេះនៅខាងលើគេ
 import './globals.css';
 
 // 💡 បង្កើត Variable សម្រាប់ Font នីមួយៗ
@@ -31,8 +32,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // 💡 ញាត់អា Variable Font ទាំងពីរចូលទៅក្នុង <body> tag
     <html lang="km">
+      <head>
+        {/* 💰 ទី២៖ កូដតភ្ជាប់ AdSense ផ្លូវការរបស់មេ */}
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9969263791405305"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+      </head>
       <body className={`${dangrek.variable} ${kantumruy.variable} font-sans`}>
         {children}
       </body>

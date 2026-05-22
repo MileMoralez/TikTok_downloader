@@ -295,9 +295,23 @@ const handleDownload = async (e: React.FormEvent) => {
         )}
 
         {/* Ads Placeholder */}
-        <div className="w-full p-4 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 text-center space-y-2">
-          <div className="text-[10px] font-bold text-slate-600 tracking-wider uppercase">Sponsor Advertisement</div>
-          <div className="text-xs text-slate-600 font-medium">[ កន្លែងដាក់ផ្ទាំងពាណិជ្ជកម្ម Google AdSense រកលុយ ]</div>
+       {/* 💰 ផ្ទាំងពាណិជ្ជកម្ម Google AdSense ផ្លូវការ */}
+        <div className="w-full p-2 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 text-center relative overflow-hidden min-h-[100px] flex items-center justify-center mt-6">
+          <div className="absolute top-2 left-0 right-0 text-[10px] font-bold text-slate-600 tracking-wider uppercase z-0">Sponsor Advertisement</div>
+          
+          <div className="relative z-10 w-full mt-4">
+            <ins className="adsbygoogle"
+                 style={{ display: 'block' }}
+                 data-ad-client="ca-pub-9969263791405305"
+                 data-ad-slot="auto" 
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script
+               dangerouslySetInnerHTML={{
+                 __html: `(adsbygoogle = window.adsbygoogle || []).push({});`,
+               }}
+            />
+          </div>
         </div>
 
       </main>

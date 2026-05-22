@@ -17,40 +17,49 @@ export default function Home() {
     if (savedHistory) setHistory(JSON.parse(savedHistory));
   }, []);
 
-  const handleDownload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setResult(null);
-    setCurrentImgIndex(0);
-    setCopied(false);
+const handleDownload = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  // 💡 ប្រុងប្រយ័ត្ន៖ បើលីងទទេរ ឬកំពុងហៅ API មិនឱ្យចុចជាន់គ្នាឡើយ
+  if (!url || loading) return; 
 
-    try {
-      const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
-      const json = await res.json();
+  setLoading(true);
+  setError('');
+  setResult(null);
+  setCurrentImgIndex(0);
+  setCopied(false);
 
-      if (json && json.data) {
-        setResult(json.data);
+  try {
+    const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
+    const json = await res.json();
 
-        const newItem = {
-          title: json.data.title || 'គ្មានចំណងជើង',
-          cover: json.data.cover,
-          url: url,
-          timestamp: Date.now()
-        };
-        const updatedHistory = [newItem, ...history.filter(h => h.url !== url)].slice(0, 3);
-        setHistory(updatedHistory);
-        localStorage.setItem('silent_media_history', JSON.stringify(updatedHistory));
+    if (json && json.data) {
+      setResult(json.data);
 
-      } else {
-        setError('រកមិនឃើញទិន្នន័យទេ! សូមពិនិត្យមើល Link TikTok របស់មេឡើងវិញ។');
-      }
-    } catch (err) {
-      setError('មានបញ្ហាបច្ចេកទេសក្នុងការភ្ជាប់ទៅកាន់ Server!');
-    } finally {
-      loading && setLoading(false);
+      const newItem = {
+        title: json.data.title || 'គ្មានចំណងជើង',
+        cover: json.data.cover,
+        url: url,
+        timestamp: Date.now()
+      };
+      
+      // ការពារកុំឱ្យ Error ពេល history ទទេរ
+      const currentHistory = history || [];
+      const updatedHistory = [newItem, ...currentHistory.filter(h => h.url !== url)].slice(0, 3);
+      setHistory(updatedHistory);
+      localStorage.setItem('silent_media_history', JSON.stringify(updatedHistory));
+
+    } else {
+      setError('រកមិនឃើញទិន្នន័យទេ! សូមពិនិត្យមើល Link TikTok របស់អ្នកឡើងវិញ។');
     }
-  };
+  } catch (err) {
+    console.error(err);
+    setError('មានបញ្ហាបច្ចេកទេសក្នុងការភ្ជាប់ទៅកាន់ Server!');
+  } endgame: {
+    // 💡 អាវុធកម្ចាត់ Bug៖ បង្ខំដោះលែងសោរ Loading ឱ្យវិលមក false វិញជានិច្ច ទោះបីជាដើរជោគជ័យ ឬធ្លាក់ Error ក៏ដោយ!
+    setLoading(false); 
+  }
+};
 
   // 💡 អាវុធសម្ងាត់ថ្មីលំដាប់ Advanced៖ បង្ខំទាញយករូបទាំងអស់ចូល Gallery ព្រមគ្នាដោយប្រើ Blob Fetch ជៀសវាង Browser Block
   const downloadAllImagesDirectly = async () => {
@@ -132,13 +141,15 @@ export default function Home() {
         <form onSubmit={handleDownload} className="w-full space-y-3">
           <div className="bg-slate-900/80 backdrop-blur-md p-2.5 rounded-2xl border border-slate-800/80 shadow-2xl flex flex-col gap-2 focus-within:border-indigo-500/50 transition-all">
             <input 
-              type="url" 
-              placeholder="បិទ Link វីដេអូ ឬរូបភាព TikTok នៅទីនេះ..." 
-              required
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full px-4 py-4 text-sm rounded-xl bg-slate-950 border border-slate-800/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition-all"
-            />
+  type="url" 
+  placeholder="បិទ Link វីដេអូ ឬរូបភាព TikTok នៅទីនេះ..." 
+  required
+  value={url}
+  onChange={(e) => setUrl(e.target.value)}
+  // 💡 ថែមជួរនេះចូល៖ ឱ្យវា Clear លីងចាស់ចេញពេល User ចុចកែប្រែដូរលីងថ្មី
+  onFocus={(e) => e.target.select()} 
+  className="w-full px-4 py-4 text-sm rounded-xl bg-slate-950 border border-slate-800/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition-all"
+/>
             <button 
               type="submit" 
               disabled={loading}

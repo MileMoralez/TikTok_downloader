@@ -16,8 +16,13 @@ const kantumruy = Kantumruy_Pro({
 });
 
 export const metadata = {
-  title: '🚀 SILENT MEDIA - TikTok Downloader',
-  description: 'ទាញយកវីដេអូ & រូបភាព TikTok គ្មាន Watermark ឡើយ',
+  title: 'TikTok Downloader - Download Video TikTok Without Watermark | SILENT MEDIA',
+  description: 'ទាញយកវីដេអូ TikTok និងរូបភាព Slideshow គ្មាន Watermark ឡើយ ល្បឿនលឿនស្លេវ ហ្វ្រី ១០០% ងាយស្រួលបំផុតនៅលើទូរស័ព្ទដៃរបស់អ្នក។',
+  keywords: ['tiktok download', 'download video tiktok', 'tiktok downloader khmer', 'គ្មាន watermark'],
+  // 💡 កូដសម្ងាត់បញ្ជាក់កម្មសិទ្ធិរបស់មេធំ គីមហេង
+  verification: {
+    google: 'eyM_kORHByvovd7E6D8MT6mTKuhudWF7imBzaRZ7zMc', 
+  },
 };
 
 export default function RootLayout({

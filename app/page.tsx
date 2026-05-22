@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 export default function Home() {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loopLoading, setLoopLoading] = useState(false); // 💡 State សម្រាប់ពេលដោនឡូតរូបភាពទាំងអស់
+  const [loopLoading, setLoopLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
@@ -20,7 +20,6 @@ export default function Home() {
 const handleDownload = async (e: React.FormEvent) => {
   e.preventDefault();
   
-  // 💡 ប្រុងប្រយ័ត្ន៖ បើលីងទទេរ ឬកំពុងហៅ API មិនឱ្យចុចជាន់គ្នាឡើយ
   if (!url || loading) return; 
 
   setLoading(true);
@@ -43,7 +42,6 @@ const handleDownload = async (e: React.FormEvent) => {
         timestamp: Date.now()
       };
       
-      // ការពារកុំឱ្យ Error ពេល history ទទេរ
       const currentHistory = history || [];
       const updatedHistory = [newItem, ...currentHistory.filter(h => h.url !== url)].slice(0, 3);
       setHistory(updatedHistory);
@@ -55,13 +53,11 @@ const handleDownload = async (e: React.FormEvent) => {
   } catch (err) {
     console.error(err);
     setError('មានបញ្ហាបច្ចេកទេសក្នុងការភ្ជាប់ទៅកាន់ Server!');
-  } endgame: {
-    // 💡 អាវុធកម្ចាត់ Bug៖ បង្ខំដោះលែងសោរ Loading ឱ្យវិលមក false វិញជានិច្ច ទោះបីជាដើរជោគជ័យ ឬធ្លាក់ Error ក៏ដោយ!
+  } finally {
     setLoading(false); 
   }
 };
 
-  // 💡 អាវុធសម្ងាត់ថ្មីលំដាប់ Advanced៖ បង្ខំទាញយករូបទាំងអស់ចូល Gallery ព្រមគ្នាដោយប្រើ Blob Fetch ជៀសវាង Browser Block
   const downloadAllImagesDirectly = async () => {
     if (!result || !result.images) return;
     setLoopLoading(true);
@@ -71,7 +67,6 @@ const handleDownload = async (e: React.FormEvent) => {
         const imgUrl = result.images[i];
         const downloadUrl = `/api/download?url=${encodeURIComponent(imgUrl)}&type=image&index=${i + 1}`;
         
-        // 🛠️ ល្បិចកលកូដ៖ ទាញយកទិន្នន័យជា Blob សិន រួចសឹមបង្កើត Trigger ដោនឡូត បែបនេះទូរស័ព្ទណាដឹងតែធ្លាក់រូបដែរ
         const response = await fetch(downloadUrl);
         const blob = await response.blob();
         const blobUrl = window.URL.createObjectURL(blob);
@@ -83,11 +78,9 @@ const handleDownload = async (e: React.FormEvent) => {
         document.body.appendChild(link);
         link.click();
         
-        // សម្អាត Memory ក្រោយពេលចុចរួច
         document.body.removeChild(link);
         window.URL.revokeObjectURL(blobUrl);
 
-        // ពន្យារពេល ១៥០ មិល្លីវិនាទី ដើម្បីឱ្យប្រព័ន្ធប្រតិបត្តិការទូរស័ព្ទចាប់ទិន្នន័យទាន់
         await new Promise((resolve) => setTimeout(resolve, 150));
       }
     } catch (err) {
@@ -97,7 +90,6 @@ const handleDownload = async (e: React.FormEvent) => {
     }
   };
 
-  // 💡 មុខងារបន្ថែម៖ ចុច Copy លីងវីដេអូ ឬរូបភាពដែលគ្មាន Watermark ទុកចែករំលែក
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -105,15 +97,16 @@ const handleDownload = async (e: React.FormEvent) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100 antialiased font-sans relative overflow-hidden">
+    // 💡 ថែម overflow-x-hidden និង w-full នៅទីនេះការពារការលានអេក្រង់
+    <div className="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100 antialiased font-sans relative overflow-x-hidden w-full">
       
       {/* Background Glow Effects */}
       <div className="absolute top-[-10%] left-[-20%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[10%] right-[-20%] w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Top Navbar */}
-      <nav className="bg-slate-900/60 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-800/80 px-4 py-4">
-        <div className="max-w-md mx-auto flex justify-between items-center">
+      <nav className="bg-slate-900/60 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-800/80 px-4 py-4 w-full">
+        <div className="max-w-md mx-auto flex justify-between items-center w-full">
           <div className="text-xl font-black tracking-widest bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent [font-family:var(--font-dangrek)]">
             🚀 SILENT MEDIA
           </div>
@@ -124,7 +117,8 @@ const handleDownload = async (e: React.FormEvent) => {
       </nav>
 
       {/* Main Container */}
-      <main className="flex-grow flex flex-col items-center px-4 py-8 max-w-md mx-auto w-full space-y-8 relative z-10">
+      {/* 💡 ថែម max-w-[100vw] និង overflow-x-hidden នៅទីនេះ */}
+      <main className="flex-grow flex flex-col items-center px-4 py-8 max-w-md mx-auto w-full max-w-[100vw] space-y-8 relative z-10 overflow-x-hidden">
         
         {/* Intro Section */}
         <div className="text-center space-y-3 pt-4 w-full">
@@ -139,14 +133,13 @@ const handleDownload = async (e: React.FormEvent) => {
 
         {/* Input Form */}
         <form onSubmit={handleDownload} className="w-full space-y-3">
-          <div className="bg-slate-900/80 backdrop-blur-md p-2.5 rounded-2xl border border-slate-800/80 shadow-2xl flex flex-col gap-2 focus-within:border-indigo-500/50 transition-all">
+          <div className="bg-slate-900/80 backdrop-blur-md p-2.5 rounded-2xl border border-slate-800/80 shadow-2xl flex flex-col gap-2 focus-within:border-indigo-500/50 transition-all w-full overflow-hidden">
             <input 
   type="url" 
   placeholder="បិទ Link វីដេអូ ឬរូបភាព TikTok នៅទីនេះ..." 
   required
   value={url}
   onChange={(e) => setUrl(e.target.value)}
-  // 💡 ថែមជួរនេះចូល៖ ឱ្យវា Clear លីងចាស់ចេញពេល User ចុចកែប្រែដូរលីងថ្មី
   onFocus={(e) => e.target.select()} 
   className="w-full px-4 py-4 text-sm rounded-xl bg-slate-950 border border-slate-800/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition-all"
 />
@@ -162,14 +155,15 @@ const handleDownload = async (e: React.FormEvent) => {
 
         {/* Error Message */}
         {error && (
-          <div className="w-full p-4 bg-red-950/50 rounded-xl border border-red-100/10 text-red-400 text-xs font-medium text-center backdrop-blur-md">
+          // 💡 ថែម break-words នៅទីនេះដើម្បីកុំឱ្យអក្សររុញប្រអប់ធំជាងអេក្រង់
+          <div className="w-full max-w-full overflow-hidden p-4 bg-red-950/50 rounded-xl border border-red-100/10 text-red-400 text-xs font-medium text-center backdrop-blur-md break-words">
             {error}
           </div>
         )}
 
         {/* Result Showcase */}
         {result && (
-          <div className="w-full bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-2xl p-5 border border-slate-800/80 space-y-5 transition-all">
+          <div className="w-full max-w-full overflow-hidden bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-2xl p-5 border border-slate-800/80 space-y-5 transition-all">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-3">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -178,7 +172,7 @@ const handleDownload = async (e: React.FormEvent) => {
               <button
                 type="button"
                 onClick={() => copyToClipboard(result.images ? result.images[currentImgIndex] : result.play)}
-                className="text-[11px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-lg hover:bg-indigo-500/20 transition-all"
+                className="text-[11px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-lg hover:bg-indigo-500/20 transition-all whitespace-nowrap ml-2"
               >
                 {copied ? '✅ បានចម្លង!' : '🔗 ចម្លង Link ស្អាត'}
               </button>
@@ -193,7 +187,7 @@ const handleDownload = async (e: React.FormEvent) => {
                   type="button"
                   onClick={downloadAllImagesDirectly}
                   disabled={loopLoading}
-                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-white font-bold py-4 rounded-xl text-xs transition shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-white font-bold py-4 rounded-xl text-xs transition shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2 px-2 text-center"
                 >
                   {loopLoading ? (
                     <span className="flex items-center gap-2 animate-pulse">⚡ កំពុងទាញយករូបភាពទាំងអស់...</span>
@@ -230,7 +224,7 @@ const handleDownload = async (e: React.FormEvent) => {
 
                 <a 
                   href={`/api/download?url=${encodeURIComponent(result.images[currentImgIndex])}&type=image&index=${currentImgIndex + 1}`}
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-center font-semibold py-3.5 rounded-xl border border-slate-700 transition text-xs flex items-center justify-center gap-2"
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-center font-semibold py-3.5 rounded-xl border border-slate-700 transition text-xs flex items-center justify-center gap-2 px-2"
                 >
                   📥 សេវតែរូបមួយសន្លឹកនេះ (Save Current Image)
                 </a>
@@ -243,7 +237,7 @@ const handleDownload = async (e: React.FormEvent) => {
                 </div>
                 <a 
                   href={`/api/download?url=${encodeURIComponent(result.play)}&type=video`}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-bold py-4 rounded-xl transition shadow-md text-xs flex items-center justify-center gap-2"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-bold py-4 rounded-xl transition shadow-md text-xs flex items-center justify-center gap-2 px-2"
                 >
                   📥 ចុចទីនេះដើម្បីទាញយកវីដេអូ
                 </a>
@@ -251,7 +245,7 @@ const handleDownload = async (e: React.FormEvent) => {
             )}
 
             {/* Title */}
-            <p className="text-slate-400 text-xs font-medium line-clamp-2 bg-slate-950 p-3 rounded-xl border border-slate-800 text-left">
+            <p className="text-slate-400 text-xs font-medium line-clamp-2 bg-slate-950 p-3 rounded-xl border border-slate-800 text-left break-words">
               {result.title || 'គ្មានចំណងជើង (No Title)'}
             </p>
 
@@ -261,7 +255,7 @@ const handleDownload = async (e: React.FormEvent) => {
                 href={result.music_info.play} 
                 target="_blank" 
                 rel="noreferrer"
-                className="w-full bg-slate-800/50 hover:bg-slate-800 text-slate-400 text-center font-semibold py-3.5 rounded-xl border border-slate-800 transition text-xs flex items-center justify-center gap-2"
+                className="w-full bg-slate-800/50 hover:bg-slate-800 text-slate-400 text-center font-semibold py-3.5 rounded-xl border border-slate-800 transition text-xs flex items-center justify-center gap-2 px-2"
               >
                 🎵 ទាញយកតែបទភ្លេង/សំឡេង MP3
               </a>
@@ -275,18 +269,18 @@ const handleDownload = async (e: React.FormEvent) => {
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left pl-1">
               ⌛ ឯកសារទើបដោនឡូតថ្មីៗ (Recent)
             </h3>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 gap-2 w-full">
               {history.map((item, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => { setUrl(item.url); }}
-                  className="w-full bg-slate-900/60 backdrop-blur-md p-2.5 rounded-xl border border-slate-800/60 shadow-md flex items-center gap-3 hover:border-indigo-500 transition-all text-left"
+                  className="w-full bg-slate-900/60 backdrop-blur-md p-2.5 rounded-xl border border-slate-800/60 shadow-md flex items-center gap-3 hover:border-indigo-500 transition-all text-left overflow-hidden"
                 >
                   <img src={item.cover} className="w-10 h-10 object-cover rounded-lg bg-slate-950 shrink-0 border border-slate-800" alt="History" />
-                  <div className="truncate pr-2">
-                    <p className="text-xs font-semibold text-slate-200 truncate">{item.title}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">ចុចដើម្បីបញ្ចូល Link ដោនឡូតឡើងវិញ</p>
+                  <div className="truncate pr-2 w-full overflow-hidden">
+                    <p className="text-xs font-semibold text-slate-200 truncate w-full">{item.title}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5 truncate w-full">ចុចដើម្បីបញ្ចូល Link ដោនឡូតឡើងវិញ</p>
                   </div>
                 </button>
               ))}
@@ -296,10 +290,10 @@ const handleDownload = async (e: React.FormEvent) => {
 
         {/* Ads Placeholder */}
        {/* 💰 ផ្ទាំងពាណិជ្ជកម្ម Google AdSense ផ្លូវការ */}
-        <div className="w-full p-2 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 text-center relative overflow-hidden min-h-[100px] flex items-center justify-center mt-6">
+        <div className="w-full max-w-full overflow-hidden p-2 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 text-center relative min-h-[100px] flex items-center justify-center mt-6">
           <div className="absolute top-2 left-0 right-0 text-[10px] font-bold text-slate-600 tracking-wider uppercase z-0">Sponsor Advertisement</div>
           
-          <div className="relative z-10 w-full mt-4">
+          <div className="relative z-10 w-full mt-4 overflow-hidden">
             <ins className="adsbygoogle"
                  style={{ display: 'block' }}
                  data-ad-client="ca-pub-9969263791405305"

@@ -12,9 +12,14 @@ export default function Home() {
   const [history, setHistory] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
 
+  // 💡 ថ្នាំទី ១៖ ការពារ Safari គាំងពេលវា Block LocalStorage (White Screen Fix)
   useEffect(() => {
-    const savedHistory = localStorage.getItem('silent_media_history');
-    if (savedHistory) setHistory(JSON.parse(savedHistory));
+    try {
+      const savedHistory = localStorage.getItem('silent_media_history');
+      if (savedHistory) setHistory(JSON.parse(savedHistory));
+    } catch (err) {
+      console.warn("Safari blocked localStorage due to privacy settings:", err);
+    }
   }, []);
 
 const handleDownload = async (e: React.FormEvent) => {
@@ -45,7 +50,13 @@ const handleDownload = async (e: React.FormEvent) => {
       const currentHistory = history || [];
       const updatedHistory = [newItem, ...currentHistory.filter(h => h.url !== url)].slice(0, 3);
       setHistory(updatedHistory);
-      localStorage.setItem('silent_media_history', JSON.stringify(updatedHistory));
+      
+      // 💡 ការពារ LocalStorage គាំងពេល Save ចូល
+      try {
+        localStorage.setItem('silent_media_history', JSON.stringify(updatedHistory));
+      } catch (err) {
+        console.warn("Cannot save history, Safari blocking:", err);
+      }
 
     } else {
       setError('រកមិនឃើញទិន្នន័យទេ! សូមពិនិត្យមើល Link TikTok របស់អ្នកឡើងវិញ។');
@@ -97,7 +108,6 @@ const handleDownload = async (e: React.FormEvent) => {
   };
 
   return (
-    // 💡 ថែម overflow-x-hidden និង w-full នៅទីនេះការពារការលានអេក្រង់
     <div className="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100 antialiased font-sans relative overflow-x-hidden w-full">
       
       {/* Background Glow Effects */}
@@ -117,7 +127,6 @@ const handleDownload = async (e: React.FormEvent) => {
       </nav>
 
       {/* Main Container */}
-      {/* 💡 ថែម max-w-[100vw] និង overflow-x-hidden នៅទីនេះ */}
       <main className="flex-grow flex flex-col items-center px-4 py-8 max-w-md mx-auto w-full max-w-[100vw] space-y-8 relative z-10 overflow-x-hidden">
         
         {/* Intro Section */}
@@ -135,14 +144,14 @@ const handleDownload = async (e: React.FormEvent) => {
         <form onSubmit={handleDownload} className="w-full space-y-3">
           <div className="bg-slate-900/80 backdrop-blur-md p-2.5 rounded-2xl border border-slate-800/80 shadow-2xl flex flex-col gap-2 focus-within:border-indigo-500/50 transition-all w-full overflow-hidden">
             <input 
-  type="url" 
-  placeholder="បិទ Link វីដេអូ ឬរូបភាព TikTok នៅទីនេះ..." 
-  required
-  value={url}
-  onChange={(e) => setUrl(e.target.value)}
-  onFocus={(e) => e.target.select()} 
-  className="w-full px-4 py-4 text-sm rounded-xl bg-slate-950 border border-slate-800/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition-all"
-/>
+              type="url" 
+              placeholder="បិទ Link វីដេអូ ឬរូបភាព TikTok នៅទីនេះ..." 
+              required
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onFocus={(e) => e.target.select()} 
+              className="w-full px-4 py-4 text-sm rounded-xl bg-slate-950 border border-slate-800/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition-all"
+            />
             <button 
               type="submit" 
               disabled={loading}
@@ -155,7 +164,6 @@ const handleDownload = async (e: React.FormEvent) => {
 
         {/* Error Message */}
         {error && (
-          // 💡 ថែម break-words នៅទីនេះដើម្បីកុំឱ្យអក្សររុញប្រអប់ធំជាងអេក្រង់
           <div className="w-full max-w-full overflow-hidden p-4 bg-red-950/50 rounded-xl border border-red-100/10 text-red-400 text-xs font-medium text-center backdrop-blur-md break-words">
             {error}
           </div>
@@ -181,8 +189,6 @@ const handleDownload = async (e: React.FormEvent) => {
             {/* 📸 ប្រភេទរូបភាព Slideshow */}
             {result.images && result.images.length > 0 ? (
               <div className="space-y-4">
-                
-                {/* ប៊ូតុងទំនើប៖ ដោនឡូតគ្រប់រូបភាពព្រមគ្នា */}
                 <button 
                   type="button"
                   onClick={downloadAllImagesDirectly}
@@ -300,9 +306,10 @@ const handleDownload = async (e: React.FormEvent) => {
                  data-ad-slot="auto" 
                  data-ad-format="auto"
                  data-full-width-responsive="true"></ins>
+            {/* 💡 ថ្នាំទី ២៖ ការពារ AdBlocker លើ Safari កុំឱ្យគាំង */}
             <script
                dangerouslySetInnerHTML={{
-                 __html: `(adsbygoogle = window.adsbygoogle || []).push({});`,
+                 __html: `try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) { console.warn('AdSense Blocked by browser'); }`,
                }}
             />
           </div>

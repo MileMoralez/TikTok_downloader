@@ -2,6 +2,35 @@
 
 import { useState, useEffect } from 'react';
 
+// 💡 ១. បំបែកប្រអប់ Ads ចេញជា Component មួយឡែក ដើម្បីកុំឱ្យវាឆ្លងរោគទៅវេបសាយទាំងមូលពេលវាគាំង
+const AdSenseBox = () => {
+  useEffect(() => {
+    try {
+      const adsbygoogle = (window as any).adsbygoogle || [];
+      // ពិនិត្យមើលថាតើ Ads ហ្នឹងបាន push ហើយឬនៅ ការពារកុំឱ្យវា push ជាន់គ្នា
+      if (adsbygoogle.length === 0) {
+        adsbygoogle.push({});
+      }
+    } catch (e) {
+      console.warn("AdSense failed to load (likely blocked by browser or AdBlocker):", e);
+    }
+  }, []);
+
+  return (
+    <div className="w-full max-w-full overflow-hidden p-2 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 text-center relative min-h-[100px] flex items-center justify-center mt-6">
+      <div className="absolute top-2 left-0 right-0 text-[10px] font-bold text-slate-600 tracking-wider uppercase z-0">Sponsor Advertisement</div>
+      <div className="relative z-10 w-full mt-4 overflow-hidden">
+        <ins className="adsbygoogle"
+             style={{ display: 'block' }}
+             data-ad-client="ca-pub-9969263791405305"
+             data-ad-slot="auto" 
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -11,14 +40,18 @@ export default function Home() {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [history, setHistory] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
+  const [isClient, setIsClient] = useState(false); // 💡 ២. State បញ្ជាក់ថាកំពុងរត់លើ Browser ពិតប្រាកដ
 
-  // 💡 ថ្នាំទី ១៖ ការពារ Safari គាំងពេលវា Block LocalStorage (White Screen Fix)
+  // 💡 ៣. ប្រើប្រព័ន្ធសុវត្ថិភាព ៣ ជាន់សម្រាប់ LocalStorage និងបញ្ជាក់ថាជា Client-side
   useEffect(() => {
+    setIsClient(true);
     try {
-      const savedHistory = localStorage.getItem('silent_media_history');
-      if (savedHistory) setHistory(JSON.parse(savedHistory));
+      if (typeof window !== 'undefined') {
+        const savedHistory = window.localStorage.getItem('silent_media_history');
+        if (savedHistory) setHistory(JSON.parse(savedHistory));
+      }
     } catch (err) {
-      console.warn("Safari blocked localStorage due to privacy settings:", err);
+      console.warn("Storage access restricted by browser:", err);
     }
   }, []);
 
@@ -51,11 +84,13 @@ const handleDownload = async (e: React.FormEvent) => {
       const updatedHistory = [newItem, ...currentHistory.filter(h => h.url !== url)].slice(0, 3);
       setHistory(updatedHistory);
       
-      // 💡 ការពារ LocalStorage គាំងពេល Save ចូល
+      // ការពារជាន់ទី ២
       try {
-        localStorage.setItem('silent_media_history', JSON.stringify(updatedHistory));
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('silent_media_history', JSON.stringify(updatedHistory));
+        }
       } catch (err) {
-        console.warn("Cannot save history, Safari blocking:", err);
+        console.warn("Cannot save history, storage blocked:", err);
       }
 
     } else {
@@ -106,6 +141,9 @@ const handleDownload = async (e: React.FormEvent) => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // 💡 ៤. បើវាមិនទាន់ Mount ចូល Client ទេ កុំទាន់អាលបង្ហាញអីទាំងអស់ (ការពារ White Screen)
+  if (!isClient) return <div className="min-h-screen bg-slate-950 flex justify-center items-center"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100 antialiased font-sans relative overflow-x-hidden w-full">
@@ -294,26 +332,8 @@ const handleDownload = async (e: React.FormEvent) => {
           </div>
         )}
 
-        {/* Ads Placeholder */}
-       {/* 💰 ផ្ទាំងពាណិជ្ជកម្ម Google AdSense ផ្លូវការ */}
-        <div className="w-full max-w-full overflow-hidden p-2 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 text-center relative min-h-[100px] flex items-center justify-center mt-6">
-          <div className="absolute top-2 left-0 right-0 text-[10px] font-bold text-slate-600 tracking-wider uppercase z-0">Sponsor Advertisement</div>
-          
-          <div className="relative z-10 w-full mt-4 overflow-hidden">
-            <ins className="adsbygoogle"
-                 style={{ display: 'block' }}
-                 data-ad-client="ca-pub-9969263791405305"
-                 data-ad-slot="auto" 
-                 data-ad-format="auto"
-                 data-full-width-responsive="true"></ins>
-            {/* 💡 ថ្នាំទី ២៖ ការពារ AdBlocker លើ Safari កុំឱ្យគាំង */}
-            <script
-               dangerouslySetInnerHTML={{
-                 __html: `try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) { console.warn('AdSense Blocked by browser'); }`,
-               }}
-            />
-          </div>
-        </div>
+        {/* 💡 ៥. ហៅ Component AdSense មកបង្ហាញនៅទីនេះ */}
+        <AdSenseBox />
 
       </main>
 
